@@ -10,6 +10,8 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
 <GridPane alignment="CENTER" minHeight="-Infinity" minWidth="-Infinity" prefHeight="750.0" prefWidth="1100.0" style="-fx-border-color: BLACK;" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="viewmodel.SignUpController">
     <columnConstraints>
         <ColumnConstraints hgrow="SOMETIMES" maxWidth="460.0" minWidth="10.0" prefWidth="162.0" />
@@ -43,7 +45,18 @@
             </children>
         </HBox>
         <VBox alignment="CENTER_RIGHT" fillWidth="false" prefHeight="200.0" prefWidth="100.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-        <VBox alignment="CENTER_LEFT" prefHeight="50.0" prefWidth="200.0" GridPane.columnIndex="2" GridPane.columnSpan="2" GridPane.rowIndex="3" />
+        <VBox alignment="CENTER_LEFT" spacing="10.0" prefHeight="150.0" prefWidth="400.0" GridPane.columnIndex="2" GridPane.columnSpan="2" GridPane.rowIndex="3">
+            <children>
+                <Label text="Username:" />
+                <TextField fx:id="usernameField" promptText="Enter username" />
+                <Label text="Password:" />
+                <PasswordField fx:id="passwordField" promptText="Enter password" />
+                <Label fx:id="statusLabel" textFill="red" />
+                <Button text="Sign Up" onAction="#handleSignUp" />
+                <Button text="Sign In" onAction="#handleSignIn" />
+            </children>
+        </VBox>
+
         <VBox alignment="CENTER_RIGHT" prefHeight="200.0" prefWidth="100.0" GridPane.columnIndex="1" GridPane.rowIndex="4" />
         <VBox alignment="CENTER_LEFT" prefHeight="50.0" prefWidth="200.0" GridPane.columnIndex="2" GridPane.columnSpan="2" GridPane.rowIndex="4" />
         <VBox alignment="CENTER_RIGHT" prefHeight="200.0" prefWidth="100.0" GridPane.columnIndex="1" GridPane.rowIndex="5" />

@@ -9,10 +9,11 @@ import java.sql.*;
 public class DbConnectivityClass {
     final static String DB_NAME="CSC311_BD_TEMP";
         MyLogger lg= new MyLogger();
-        final static String SQL_SERVER_URL = "jdbc:mysql://server.mariadb.database.azure.com";//update this server name
-        final static String DB_URL = "jdbc:mysql://server.mariadb.database.azure.com/"+DB_NAME;//update this database name
-        final static String USERNAME = "csc311admin@server";// update this username
-        final static String PASSWORD = "FARM";// update this password
+    final static String SQL_SERVER_URL = "jdbc:mysql://cscnew.mysql.database.azure.com:3306?useSSL=true";
+    final static String DB_URL = "jdbc:mysql://cscnew.mysql.database.azure.com:3306/" + DB_NAME + "?useSSL=true";
+    final static String USERNAME = "burusv";
+    final static String PASSWORD = "Test1234";
+
 
 
         private final ObservableList<Person> data = FXCollections.observableArrayList();

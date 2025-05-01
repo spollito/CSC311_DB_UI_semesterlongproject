@@ -8,14 +8,21 @@ import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-
+import service.UserSession;
 
 
 public class LoginController {
+
+    @FXML private TextField usernameField;
+    @FXML private PasswordField passwordField;
+    @FXML private Label statusLabel;
 
 
     @FXML
@@ -47,17 +54,33 @@ public class LoginController {
     }
     @FXML
     public void login(ActionEvent actionEvent) {
+        String username = usernameField.getText().trim();
+        String password = passwordField.getText().trim();
+
+        if (username.isEmpty() || password.isEmpty()) {
+            statusLabel.setText("Username and password cannot be empty.");
+            return;
+        }
+
         try {
+            UserSession.signIn(username, password);
+            statusLabel.setText("Login successful!");
+
             Parent root = FXMLLoader.load(getClass().getResource("/view/db_interface_gui.fxml"));
             Scene scene = new Scene(root, 900, 600);
             scene.getStylesheets().add(getClass().getResource("/css/lightTheme.css").toExternalForm());
             Stage window = (Stage) ((Node) actionEvent.getSource()).getScene().getWindow();
             window.setScene(scene);
             window.show();
+        } catch (SecurityException e) {
+            statusLabel.setText("Invalid credentials.");
         } catch (Exception e) {
+            statusLabel.setText("Login failed.");
             e.printStackTrace();
         }
     }
+
+
 
     public void signUp(ActionEvent actionEvent) {
         try {

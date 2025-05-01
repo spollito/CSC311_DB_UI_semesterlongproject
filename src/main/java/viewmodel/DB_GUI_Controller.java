@@ -1,7 +1,9 @@
 package viewmodel;
 
 import dao.DbConnectivityClass;
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -18,19 +20,37 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import model.Person;
 import service.MyLogger;
-
+import javafx.scene.control.ComboBox;
 import java.io.File;
+import java.io.PrintWriter;
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.Scanner;
+import java.util.regex.Pattern;
 
 public class DB_GUI_Controller implements Initializable {
+    @FXML private Label statusLabel;
 
-    @FXML
-    TextField first_name, last_name, department, major, email, imageURL;
+    @FXML private Button editButton;
+    @FXML private Button deleteButton;
+    @FXML private Button addButton;
+
+    @FXML private MenuItem editMenuItem;
+    @FXML private MenuItem deleteMenuItem;
+
+    @FXML private MenuItem importCSVItem;
+    @FXML private MenuItem exportCSVItem;
+
+
+
+    @FXML TextField first_name, last_name, department, email, imageURL;
+    @FXML ComboBox<Major> majorComboBox;
+
     @FXML
     ImageView img_view;
     @FXML
@@ -43,9 +63,19 @@ public class DB_GUI_Controller implements Initializable {
     private TableColumn<Person, String> tv_fn, tv_ln, tv_department, tv_major, tv_email;
     private final DbConnectivityClass cnUtil = new DbConnectivityClass();
     private final ObservableList<Person> data = cnUtil.getData();
-
+    // Define enum
+    public enum Major {
+        CS, CPIS, English
+    }
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        editButton.setDisable(true);
+        deleteButton.setDisable(true);
+        addButton.setDisable(true);
+
+        editMenuItem.setDisable(true);
+        deleteMenuItem.setDisable(true);
+
         try {
             tv_id.setCellValueFactory(new PropertyValueFactory<>("id"));
             tv_fn.setCellValueFactory(new PropertyValueFactory<>("firstName"));
@@ -57,18 +87,66 @@ public class DB_GUI_Controller implements Initializable {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
+
+        majorComboBox.setItems(FXCollections.observableArrayList(Major.values()));
+        majorComboBox.getSelectionModel().selectFirst();
+        setupFormValidation();
     }
+    private void setupFormValidation() {
+        ChangeListener<String> validator = (obs, oldVal, newVal) -> validateFormFields();
+
+        first_name.textProperty().addListener(validator);
+        last_name.textProperty().addListener(validator);
+        email.textProperty().addListener(validator);
+        department.textProperty().addListener(validator);
+        imageURL.textProperty().addListener(validator);
+
+        majorComboBox.valueProperty().addListener((obs, oldVal, newVal) -> validateFormFields());
+    }
+
+    private void validateFormFields() {
+        boolean valid = validateName(first_name.getText()) &&
+                validateName(last_name.getText()) &&
+                validateEmail(email.getText()) &&
+                validateDept(department.getText()) &&
+                validateURL(imageURL.getText()) &&
+                majorComboBox.getValue() != null;
+        addButton.setDisable(!valid);
+    }
+
+    // Regex validation methods
+    private boolean validateName(String name) {
+        return Pattern.matches("^[A-Z][a-z]+(?: [A-Z][a-z]+)*$", name); // e.g., John Smith
+    }
+
+    private boolean validateEmail(String email) {
+        return Pattern.matches("^[\\w.-]+@[\\w.-]+\\.\\w{2,}$", email);
+    }
+
+    private boolean validateDept(String dept) {
+        return Pattern.matches("^[A-Z][a-zA-Z ]{2,}$", dept);
+    }
+
+    private boolean validateURL(String url) {
+        return Pattern.matches("^(http|https)://.*$", url) || url.isEmpty(); // allow empty for optional field
+    }
+
+
 
     @FXML
     protected void addNewRecord() {
 
-            Person p = new Person(first_name.getText(), last_name.getText(), department.getText(),
-                    major.getText(), email.getText(), imageURL.getText());
-            cnUtil.insertUser(p);
+        Person p = new Person(first_name.getText(), last_name.getText(), department.getText(),
+                majorComboBox.getValue().name(), email.getText(), imageURL.getText());
+
+        cnUtil.insertUser(p);
             cnUtil.retrieveId(p);
             p.setId(cnUtil.retrieveId(p));
             data.add(p);
             clearForm();
+        statusLabel.setText("Record added successfully.");
+
 
     }
 
@@ -77,7 +155,7 @@ public class DB_GUI_Controller implements Initializable {
         first_name.setText("");
         last_name.setText("");
         department.setText("");
-        major.setText("");
+        majorComboBox.getSelectionModel().clearSelection();
         email.setText("");
         imageURL.setText("");
     }
@@ -119,11 +197,13 @@ public class DB_GUI_Controller implements Initializable {
         Person p = tv.getSelectionModel().getSelectedItem();
         int index = data.indexOf(p);
         Person p2 = new Person(index + 1, first_name.getText(), last_name.getText(), department.getText(),
-                major.getText(), email.getText(),  imageURL.getText());
+                majorComboBox.getValue().name(), email.getText(),  imageURL.getText());
         cnUtil.editUser(p.getId(), p2);
         data.remove(p);
         data.add(index, p2);
         tv.getSelectionModel().select(index);
+        statusLabel.setText("Record updated successfully.");
+
     }
 
     @FXML
@@ -151,13 +231,23 @@ public class DB_GUI_Controller implements Initializable {
     @FXML
     protected void selectedItemTV(MouseEvent mouseEvent) {
         Person p = tv.getSelectionModel().getSelectedItem();
-        first_name.setText(p.getFirstName());
-        last_name.setText(p.getLastName());
-        department.setText(p.getDepartment());
-        major.setText(p.getMajor());
-        email.setText(p.getEmail());
-        imageURL.setText(p.getImageURL());
+        boolean selected = p != null;
+
+        editButton.setDisable(!selected);
+        deleteButton.setDisable(!selected);
+        editMenuItem.setDisable(!selected);
+        deleteMenuItem.setDisable(!selected);
+
+        if (selected) {
+            first_name.setText(p.getFirstName());
+            last_name.setText(p.getLastName());
+            department.setText(p.getDepartment());
+            majorComboBox.setValue(Major.valueOf(p.getMajor()));
+            email.setText(p.getEmail());
+            imageURL.setText(p.getImageURL());
+        }
     }
+
 
     public void lightTheme(ActionEvent actionEvent) {
         try {
@@ -184,6 +274,15 @@ public class DB_GUI_Controller implements Initializable {
             e.printStackTrace();
         }
     }
+
+    private void showStatus(String message) {
+        statusLabel.setText(message);
+        PauseTransition pause = new PauseTransition(Duration.seconds(3));
+        pause.setOnFinished(e -> statusLabel.setText("Ready."));
+        pause.play();
+    }
+
+
 
     public void showSomeone() {
         Dialog<Results> dialog = new Dialog<>();
@@ -214,7 +313,69 @@ public class DB_GUI_Controller implements Initializable {
         });
     }
 
-    private static enum Major {Business, CSC, CPIS}
+    @FXML
+    private void importCSV() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Import CSV File");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+        File file = fileChooser.showOpenDialog(menuBar.getScene().getWindow());
+
+        if (file != null) {
+            try (Scanner scanner = new Scanner(file)) {
+                while (scanner.hasNextLine()) {
+                    String[] values = scanner.nextLine().split(",");
+                    if (values.length >= 6) {
+                        Person p = new Person(
+                                values[0].trim(),
+                                values[1].trim(),
+                                values[2].trim(),
+                                values[3].trim(),
+                                values[4].trim(),
+                                values[5].trim()
+                        );
+                        cnUtil.insertUser(p);
+                        p.setId(cnUtil.retrieveId(p));
+                        data.add(p);
+                    }
+                }
+                showStatus("CSV imported successfully.");
+            } catch (Exception e) {
+                showStatus("Error importing CSV.");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @FXML
+    private void exportCSV() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Export to CSV");
+        fileChooser.setInitialFileName("export.csv");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+        File file = fileChooser.showSaveDialog(menuBar.getScene().getWindow());
+
+        if (file != null) {
+            try (PrintWriter writer = new PrintWriter(file)) {
+                for (Person p : data) {
+                    writer.println(String.join(",",
+                            p.getFirstName(),
+                            p.getLastName(),
+                            p.getDepartment(),
+                            p.getMajor(),
+                            p.getEmail(),
+                            p.getImageURL()
+                    ));
+                }
+                showStatus("Data exported successfully.");
+            } catch (Exception e) {
+                showStatus("Error exporting CSV.");
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    //private static enum Major {Business, CSC, CPIS}
 
     private static class Results {
 
